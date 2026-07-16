@@ -8,8 +8,14 @@
 # site needs no COOP/COEP headers. Recipe mirrors the upstream wasm-demo.yml
 # workflow. The full (non-slim) rust image is used so a C compiler is present
 # for building wasm-bindgen-cli from source.
+#
+# Pinned to $BUILDPLATFORM: the output (/site -- wasm bundle, JS, HTML, ROMs)
+# is architecture-independent, so on a multi-arch (buildx) build this stage
+# compiles once on the native builder rather than being emulated under QEMU for
+# each target. For a plain single-arch `docker build`, BUILDPLATFORM equals the
+# host, so this is a no-op.
 # ---------------------------------------------------------------------------
-FROM rust:1-bookworm AS build
+FROM --platform=$BUILDPLATFORM rust:1-bookworm AS build
 
 # Copperline git ref to build: a commit SHA, tag, or branch. The browser
 # frontend (crates/copperline-web) landed on main after the v0.11.0 release, so
