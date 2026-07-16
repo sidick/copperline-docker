@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Copperline — Amiga in your browser</title>
+<meta name="description" content="Copperline, a cycle-driven Amiga emulator written in Rust and compiled to WebAssembly. Boots the open-source AROS ROM; bring your own Kickstart and disks.">
+<meta name="theme-color" content="#0a0d16">
+<style>
+  /* Minimal, self-contained shell. All emulator behaviour lives in try.js,
+     which looks up the element IDs below; this page only lays them out.
+     No external CSS, fonts, images, or scripts. */
+  :root {
+    --bg: #0a0d16;
+    --panel: #121725;
+    --line: #2a3450;
+    --ink: #e6ebf5;
+    --ink-mute: #8a97b5;
+    --accent: #d98a2b;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem 1rem 2.5rem;
+    gap: 1rem;
+  }
+  h1 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: 0.02em;
+  }
+  h1 small {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--ink-mute);
+    margin-top: 0.25rem;
+  }
+  .wrap { width: 100%; max-width: 900px; }
+
+  /* The 4:3 display + boot overlay. #shell is the fullscreen target. */
+  #shell {
+    position: relative;
+    background: #000;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  #shell:fullscreen { border: none; border-radius: 0; }
+  #shell:fullscreen #screen { height: 100%; object-fit: contain; }
+  #screen {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    image-rendering: pixelated;
+    background: #000;
+    touch-action: none;
+  }
+  #overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    text-align: center;
+    padding: 1rem;
+    background: rgba(8, 11, 19, 0.8);
+  }
+  #load-status {
+    margin: 0;
+    color: var(--ink-mute);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.85rem;
+  }
+  #bug-report-err {
+    color: var(--accent);
+    font-size: 0.85rem;
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.9rem;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--panel);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.5rem 0.9rem;
+    font: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .btn--primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #1a1206;
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 0.65rem 1.4rem;
+  }
+  input[type="range"] { accent-color: var(--accent); width: 110px; }
+  #stat {
+    margin-left: auto;
+    color: var(--ink-mute);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+  .note {
+    max-width: 900px;
+    color: var(--ink-mute);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+  .note code {
+    color: var(--ink);
+    background: var(--panel);
+    padding: 0.05rem 0.35rem;
+    border-radius: 4px;
+  }
+  a { color: var(--accent); }
+  @media (max-width: 640px) {
+    #stat { margin-left: 0; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<h1>
+  Copperline
+  <small>A cycle-driven Amiga 500, in Rust, compiled to WebAssembly</small>
+</h1>
+
+<div class="wrap">
+  <div id="shell">
+    <canvas id="screen" width="716" height="570"></canvas>
+    <div id="overlay">
+      <button id="boot" class="btn btn--primary" disabled>Boot AROS</button>
+      <p id="load-status">loading emulator&hellip;</p>
+      <a id="bug-report-err" hidden
+         href="https://github.com/LinuxJedi/Copperline/issues/new?template=bug_report.yml"
+         target="_blank" rel="noopener">Report this on GitHub</a>
+    </div>
+  </div>
+
+  <div class="controls">
+    <label class="btn">Insert DF0&hellip;
+      <input id="df0" type="file" accept=".adf,.adz,.dms,.gz,.zip,.ipf,.scp" hidden></label>
+    <button id="df0url" class="btn">DF0 from URL&hellip;</button>
+    <label class="btn">Load Kickstart&hellip;
+      <input id="kick" type="file" accept=".rom,.bin" hidden></label>
+    <button id="eject" class="btn">Eject</button>
+    <button id="reset" class="btn">Reset</button>
+    <button id="joy" class="btn">Joystick: off</button>
+    <button id="fullscreen" class="btn">Fullscreen</button>
+    <input id="vol" type="range" min="0" max="100" value="80" aria-label="Volume">
+    <span id="stat"></span>
+  </div>
+</div>
+
+<p class="note">
+  Boots the bundled open-source AROS ROM — no Kickstart needed. Load your own
+  Kickstart and disk images with the buttons above; everything runs locally in
+  your browser and nothing is uploaded. Disks mounted into the container's
+  <code>/files</code> volume can be loaded straight from the address bar, e.g.
+  <code>?df0=files/game.adf</code>, or via <strong>DF0 from URL</strong> with
+  <code>files/game.adf</code>. For audio, open this page over
+  <code>localhost</code> or HTTPS. Powered by
+  <a href="https://github.com/LinuxJedi/Copperline" target="_blank" rel="noopener">Copperline</a>.
+</p>
+
+<script type="module" src="./try.js"></script>
+</body>
+</html>
