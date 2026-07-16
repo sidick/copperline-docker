@@ -100,7 +100,9 @@ from the crate.
 
 ## Licences
 
-- **Copperline** — GNU GPL v3.
+- **This project** — GNU GPL v3 or later (`GPL-3.0-or-later`), matching Copperline;
+  see [`LICENSE`](LICENSE).
+- **Copperline** (the emulator built into the image) — GNU GPL v3 or later.
 - **AROS ROMs** — AROS Public License (see `aros/LICENSE` in the running container,
   at `/aros/LICENSE`).
 - No Kickstart ROM is included; supply your own dump.
