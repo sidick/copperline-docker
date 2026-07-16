@@ -39,30 +39,91 @@ docker compose up --build
 ## Loading your own disks and ROMs
 
 The emulator runs entirely in your browser, so files reach it through the page, not
-the server's filesystem. Two ways to supply them:
+the server's filesystem. There are three ways to supply your own files, covered
+below with `docker` and `docker compose` examples.
 
-- **File pickers** — *Insert DF0…* for a disk image, *Load Kickstart…* for a ROM.
-  These read a file straight off your machine.
-- **A mounted `/files` volume** — mount a host directory into the container and load
-  disks by URL, no picker needed:
+### Your own disks — mount them into `/files`
 
-  ```sh
-  docker run --rm -p 8080:8080 \
-    -v "$PWD/disks":/usr/share/nginx/html/files \
-    copperline
-  ```
+Put your disk images on the host and mount that directory at
+`/usr/share/nginx/html/files`; nginx serves it, and the emulator loads disks from it
+by URL — no file picker needed.
 
-  Drop `game.adf` into `./disks`, then either:
-  - open `http://localhost:8080/?df0=files/game.adf` (bootable, shareable link), or
-  - click **DF0 from URL** and enter `files/game.adf`, or
-  - browse the listing at `http://localhost:8080/files/`.
+Create a `disks/` directory and drop `game.adf` into it, then:
 
-  Supported disk formats (detected by content): ADF, ADZ, DMS, IPF, SCP — plain or
-  gzip/zip-packed, up to 64 MiB. Disks are always write-protected in the browser.
+```sh
+# docker
+docker run --rm -p 8080:8080 \
+  -v "$PWD/disks":/usr/share/nginx/html/files:ro \
+  ghcr.io/sidick/copperline:latest
+```
 
-**Kickstart note:** Copperline intentionally has no `?kick=` URL loader (Kickstart
-ROMs are copyrighted, so sharing them by URL is unsupported). A Kickstart placed in
-the volume must still be loaded through the **Load Kickstart…** picker.
+```yaml
+# docker-compose.yml (the bundled compose file already does this)
+services:
+  copperline:
+    image: ghcr.io/sidick/copperline:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./disks:/usr/share/nginx/html/files:ro
+```
+
+```sh
+docker compose up
+```
+
+Then load the disk any of these ways:
+- open `http://localhost:8080/?df0=files/game.adf` (a bootable, shareable link), or
+- click **DF0 from URL** and enter `files/game.adf`, or
+- browse the listing at `http://localhost:8080/files/`.
+
+Supported formats (detected by content): ADF, ADZ, DMS, IPF, SCP — plain or
+gzip/zip-packed, up to 64 MiB. Disks are always write-protected in the browser.
+
+### Your own Kickstart — use the in-page picker
+
+Copperline intentionally has **no** URL/volume loader for Kickstarts: ROM images are
+copyrighted, so there is no `?kick=` parameter and a Kickstart placed in `/files`
+cannot be auto-loaded. Instead, load it straight from your machine — no image
+changes needed:
+
+- click **Load Kickstart…** and choose your `.rom`, or
+- drag a `.rom` file onto the page.
+
+The ROM stays local to your browser and is never uploaded. This works before or
+after boot (a pre-boot choice is applied when the machine starts).
+
+### Replace the built-in boot ROM (advanced)
+
+The **Boot AROS** button boots whatever the image serves at
+`aros/aros-amiga-m68k-rom.bin` (main, `$F80000`) and `aros/aros-amiga-m68k-ext.bin`
+(extended, `$E00000`). Mount your own **matched pair** over both files to change what
+the button boots — both are fetched and required:
+
+```sh
+# docker — e.g. swap in a different AROS build
+docker run --rm -p 8080:8080 \
+  -v "$PWD/rom/my-rom.bin":/usr/share/nginx/html/aros/aros-amiga-m68k-rom.bin:ro \
+  -v "$PWD/rom/my-ext.bin":/usr/share/nginx/html/aros/aros-amiga-m68k-ext.bin:ro \
+  ghcr.io/sidick/copperline:latest
+```
+
+```yaml
+# docker-compose.yml
+services:
+  copperline:
+    image: ghcr.io/sidick/copperline:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./rom/my-rom.bin:/usr/share/nginx/html/aros/aros-amiga-m68k-rom.bin:ro
+      - ./rom/my-ext.bin:/usr/share/nginx/html/aros/aros-amiga-m68k-ext.bin:ro
+```
+
+This is meant for swapping in an alternative **AROS** build, which ships as a
+matched main + extended ROM pair. A stock Amiga Kickstart is a single ROM with no
+extended half, so it does not fit this two-file boot path — use the **Load
+Kickstart…** picker above for those.
 
 ## Audio and secure context
 
