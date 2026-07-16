@@ -10,6 +10,14 @@ needed — and configures a stock Amiga 500 (512K chip RAM + 512K trapdoor).
 
 ## Quick start
 
+Pull the pre-built multi-arch image (linux/amd64 + linux/arm64) from GHCR:
+
+```sh
+docker run --rm -p 8080:8080 ghcr.io/sidick/copperline:latest
+```
+
+Or build it yourself:
+
 ```sh
 docker build -t copperline .
 docker run --rm -p 8080:8080 copperline
@@ -85,6 +93,25 @@ docker build --build-arg COPPERLINE_REF=<sha-or-tag> -t copperline .
 (Or edit `COPPERLINE_REF` in `docker-compose.yml`.) The `wasm-bindgen` CLI version
 is parsed from Copperline's own `Cargo.toml` during the build so it can never drift
 from the crate.
+
+## Publishing to GHCR
+
+The [`Publish container image`](.github/workflows/publish-image.yml) workflow builds
+a multi-arch (`linux/amd64` + `linux/arm64`) image and pushes it to
+`ghcr.io/<owner>/<repo>`. It is **manually triggered**: in the repo, go to
+**Actions → Publish container image → Run workflow** and optionally set:
+
+- `copperline_ref` — the Copperline commit SHA, tag, or branch to build.
+- `tag` — the image tag to publish (default `latest`); a `sha-<commit>` tag is
+  always added as well.
+
+It authenticates with the built-in `GITHUB_TOKEN` (no secrets to configure) and
+caches the Rust build between runs. The Dockerfile's build stage is pinned to
+`$BUILDPLATFORM`, so the architecture-independent wasm build compiles once on the
+native runner instead of being emulated under QEMU for each target arch.
+
+The published package starts **private** — make it public under the repo's
+**Packages** settings if you want unauthenticated `docker pull`s.
 
 ## What's in the image
 

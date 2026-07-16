@@ -1,0 +1,89 @@
+name: Publish container image
+
+# Manually-triggered build of a multi-arch (amd64 + arm64) image, pushed to the
+# GitHub Container Registry (ghcr.io/<owner>/<repo>).
+on:
+  workflow_dispatch:
+    inputs:
+      copperline_ref:
+        description: "Copperline git ref to build (commit SHA, tag, or branch)"
+        required: false
+        default: f3fb5cc130115cdef93c2f5ce557a19addd88ba3
+      tag:
+        description: "Image tag to publish (alongside a git-sha tag)"
+        required: false
+        default: latest
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  # Publish as ghcr.io/<owner>/copperline (not the repo name copperline-docker).
+  IMAGE_NAME: ${{ github.repository_owner }}/copperline
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Needed so the arm64 runtime layer (a trivial mkdir/chown RUN) can run
+      # under emulation. The heavy Rust build stage is pinned to $BUILDPLATFORM
+      # in the Dockerfile, so it is not emulated.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # metadata-action lowercases the image name and emits standard OCI labels
+      # (source, revision, created). These override the Dockerfile's own LABELs,
+      # so the published image's revision reflects THIS repo's commit; the
+      # Copperline ref that was built is recorded in the build-arg / build log.
+      - name: Derive tags and labels
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ inputs.tag }}
+            type=sha,format=long
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            COPPERLINE_REF=${{ inputs.copperline_ref }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Cache the (expensive) Rust build across runs.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # Keep the manifest list to just amd64 + arm64 (no extra
+          # unknown/unknown provenance attestation entry).
+          provenance: false
+
+      - name: Summary
+        run: |
+          echo "### Published image" >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo "Platforms: linux/amd64, linux/arm64" >> "$GITHUB_STEP_SUMMARY"
+          echo "Copperline ref: \`${{ inputs.copperline_ref }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo "Tags:" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.meta.outputs.tags }}" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
