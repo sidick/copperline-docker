@@ -20,7 +20,8 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  # Publish as ghcr.io/<owner>/copperline (not the repo name copperline-docker).
+  IMAGE_NAME: ${{ github.repository_owner }}/copperline
 
 jobs:
   build-and-push:
