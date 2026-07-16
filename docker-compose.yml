@@ -1,0 +1,18 @@
+services:
+  copperline:
+    build:
+      context: .
+      # Copperline git ref (commit SHA, tag, or branch). Pinned to a main commit
+      # because the browser frontend is newer than the latest release tag.
+      # Set to "main" to always build the latest.
+      args:
+        COPPERLINE_REF: f3fb5cc130115cdef93c2f5ce557a19addd88ba3
+    image: copperline
+    ports:
+      # host:container — nginx listens on 8080 inside (runs as non-root)
+      - "8080:8080"
+    volumes:
+      # Drop your .adf/.rom files in ./disks, then load them in the emulator
+      # via ?df0=files/<name>.adf or the "DF0 from URL" button.
+      - ./disks:/usr/share/nginx/html/files:ro
+    restart: unless-stopped
