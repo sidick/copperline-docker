@@ -80,17 +80,30 @@ Then load the disk any of these ways:
 Supported formats (detected by content): ADF, ADZ, DMS, IPF, SCP — plain or
 gzip/zip-packed, up to 64 MiB. Disks are always write-protected in the browser.
 
-### Your own Kickstart — use the in-page picker
+### Your own Kickstart
 
-Copperline intentionally has **no** URL/volume loader for Kickstarts: ROM images are
-copyrighted, so there is no `?kick=` parameter and a Kickstart placed in `/files`
-cannot be auto-loaded. Instead, load it straight from your machine — no image
-changes needed:
+Put your Kickstart on the host and mount it into `/files` just like a disk, then load
+it with the **same-origin** `?kick=` page parameter:
 
-- click **Load Kickstart…** and choose your `.rom`, or
-- drag a `.rom` file onto the page.
+```sh
+# docker — mount a directory holding kick13.rom (and any disks)
+docker run --rm -p 8080:8080 \
+  -v "$PWD/files":/usr/share/nginx/html/files:ro \
+  ghcr.io/sidick/copperline:latest
+```
 
-The ROM stays local to your browser and is never uploaded. This works before or
+Then open `http://localhost:8080/?kick=files/kick13.rom` — the Boot button relabels
+to your ROM and boots it. You can combine it with a disk in one URL:
+`?kick=files/kick13.rom&df0=files/game.adf`. There's also a **Kickstart from URL**
+button on the page that prompts for a same-origin path.
+
+`?kick=` is deliberately **same-origin only** (it can only fetch ROMs the container
+already serves — copyrighted images can't be pulled from elsewhere), http(s) only,
+and capped at 4 MiB; the core validates the 256/512 KiB ROM size.
+
+You can also load a ROM straight from your machine without mounting anything — click
+**Load Kickstart…** and choose your `.rom`, or drag a `.rom` onto the page. Either
+way the ROM stays local to your browser and is never uploaded; both work before or
 after boot (a pre-boot choice is applied when the machine starts).
 
 ### Replace the built-in boot ROM (advanced)
