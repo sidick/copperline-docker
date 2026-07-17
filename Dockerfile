@@ -21,7 +21,7 @@ FROM --platform=$BUILDPLATFORM rust:1-bookworm AS build
 # frontend (crates/copperline-web) landed on main after the v0.11.0 release, so
 # no release tag contains it yet; this is pinned to a specific main commit for
 # reproducibility. Override with --build-arg COPPERLINE_REF=<sha|tag|branch>.
-ARG COPPERLINE_REF=f3fb5cc130115cdef93c2f5ce557a19addd88ba3
+ARG COPPERLINE_REF=bc5bcbf166432d4e2b0d3b2a468f4443eefe5f6a
 
 # 1. wasm target
 RUN rustup target add wasm32-unknown-unknown
@@ -70,7 +70,7 @@ COPY index.html /site/index.html
 FROM nginxinc/nginx-unprivileged:alpine
 
 # Re-declared so the build ARG is visible in this stage for the labels below.
-ARG COPPERLINE_REF=f3fb5cc130115cdef93c2f5ce557a19addd88ba3
+ARG COPPERLINE_REF=bc5bcbf166432d4e2b0d3b2a468f4443eefe5f6a
 
 # OCI image metadata.
 LABEL org.opencontainers.image.title="copperline-docker" \
