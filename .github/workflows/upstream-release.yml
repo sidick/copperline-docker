@@ -1,0 +1,96 @@
+name: Build on Copperline release
+
+# Polls upstream Copperline for a new release and, when one lands that actually
+# contains the browser frontend, builds and publishes the image tagged with
+# that version. GitHub cannot deliver another repo's release events to us, so
+# this is a daily poll (plus manual dispatch).
+#
+# It idles cheaply until Copperline cuts a release that includes
+# crates/copperline-web: the browser build is currently main-only, so every run
+# until then simply reports "no build needed" and exits.
+on:
+  schedule:
+    - cron: "17 6 * * *" # daily, 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  check:
+    name: Check for a new release
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.decide.outputs.build }}
+      ref: ${{ steps.rel.outputs.tag }}
+      tags: ${{ steps.meta.outputs.tags }}
+      labels: ${{ steps.meta.outputs.labels }}
+    steps:
+      - name: Look up the latest Copperline release
+        id: rel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh api repos/LinuxJedi/Copperline/releases/latest --jq '.tag_name // empty' 2>/dev/null || true)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Latest Copperline release: ${tag:-<none>}"
+
+      # Reading our own (private) package needs a login first.
+      - name: Log in to GHCR
+        if: steps.rel.outputs.tag != ''
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Decide whether to build
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag='${{ steps.rel.outputs.tag }}'
+          owner='${{ github.repository_owner }}'
+          if [ -z "$tag" ]; then
+            echo "No release found; nothing to do."
+            echo "build=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # The browser frontend must exist at that tag (older releases predate it).
+          if ! gh api "repos/LinuxJedi/Copperline/contents/crates/copperline-web/Cargo.toml?ref=$tag" >/dev/null 2>&1; then
+            echo "Release $tag has no crates/copperline-web (browser build); skipping."
+            echo "build=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # Skip if we already published this version.
+          ver="${tag#v}"
+          if docker manifest inspect "ghcr.io/${owner}/copperline:${ver}" >/dev/null 2>&1; then
+            echo "ghcr.io/${owner}/copperline:${ver} already exists; skipping."
+            echo "build=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "Will build Copperline $tag as copperline:${ver} (+ latest)."
+          echo "build=true" >> "$GITHUB_OUTPUT"
+
+      - name: Derive tags and labels
+        id: meta
+        if: steps.decide.outputs.build == 'true'
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/copperline
+          tags: |
+            type=semver,pattern={{version}},value=${{ steps.rel.outputs.tag }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.rel.outputs.tag }}
+            type=raw,value=latest
+
+  publish:
+    name: Build and push
+    needs: check
+    if: needs.check.outputs.build == 'true'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/_build-image.yml
+    with:
+      copperline_ref: ${{ needs.check.outputs.ref }}
+      tags: ${{ needs.check.outputs.tags }}
+      labels: ${{ needs.check.outputs.labels }}
