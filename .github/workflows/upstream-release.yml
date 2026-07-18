@@ -94,3 +94,48 @@ jobs:
       copperline_ref: ${{ needs.check.outputs.ref }}
       tags: ${{ needs.check.outputs.tags }}
       labels: ${{ needs.check.outputs.labels }}
+
+  # Record each published build as a GitHub release in this repo, tagged with
+  # the Copperline version it wraps (e.g. v0.12.0). The release is a marker +
+  # changelog pointing at the GHCR image (the actual artifact); it creates the
+  # git tag at the default branch's current commit.
+  release:
+    name: Create GitHub release
+    needs: [check, publish]
+    if: needs.check.outputs.build == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Create release for this build
+        run: |
+          set -euo pipefail
+          tag='${{ needs.check.outputs.ref }}'
+          ver="${tag#v}"
+          image="ghcr.io/${{ github.repository_owner }}/copperline"
+          digest='${{ needs.publish.outputs.digest }}'
+          upstream="https://github.com/LinuxJedi/Copperline/releases/tag/${tag}"
+
+          # Idempotent: a re-run for an already-released version is a no-op.
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists; nothing to do."
+            exit 0
+          fi
+
+          {
+            echo "Multi-arch (linux/amd64 + linux/arm64) container image built from Copperline [\`$tag\`]($upstream)."
+            echo
+            echo '```'
+            echo "docker pull $image:$ver"
+            echo '```'
+            echo
+            echo "- Image: \`$image:$ver\` (also \`:${ver%.*}\` and \`:latest\`)"
+            echo "- Digest: \`$digest\`"
+            echo "- Copperline release: [$tag]($upstream)"
+          } > notes.md
+
+          gh release create "$tag" --title "copperline-docker $tag" --notes-file notes.md
+          echo "Created release $tag."
