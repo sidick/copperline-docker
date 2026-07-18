@@ -132,7 +132,7 @@ jobs:
             echo "docker pull $image:$ver"
             echo '```'
             echo
-            echo "- Image: \`$image:$ver\` (also \`:${ver%.*}\` and \`:latest\`)"
+            echo "- Image: \`$image:$ver\` (also \`:${ver%.*}\`)"
             echo "- Digest: \`$digest\`"
             echo "- Copperline release: [$tag]($upstream)"
           } > notes.md
