@@ -33,7 +33,7 @@ jobs:
       # Copperline ref that was built is recorded in the build-arg / build log.
       - name: Derive tags and labels
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ github.repository_owner }}/copperline
           tags: |
