@@ -43,8 +43,16 @@ RUN V=$(sed -n 's/^wasm-bindgen = "=\(.*\)"$/\1/p' Cargo.toml) && \
     test -n "$V" && \
     cargo install wasm-bindgen-cli --version "$V" --locked
 
-# 4. Build the wasm and run wasm-bindgen
-RUN cargo build --release --target wasm32-unknown-unknown --locked && \
+# 4. Build the wasm and run wasm-bindgen.
+#    NB: no --locked here. copperline-web is a nested workspace whose committed
+#    Cargo.lock pins its path dependency `copperline = { path = "../.." }` by
+#    version. Upstream release tags bump the root crate's version (e.g. 0.11.0 ->
+#    0.12.0) without regenerating this nested lock, so it goes stale at the tag
+#    and `--locked` aborts with "cannot update the lock file ... --locked was
+#    passed". The drift is only the local path-dep version (no registry/network
+#    changes), so letting cargo reconcile the lock in place is safe; registry
+#    deps still resolve from the committed lock.
+RUN cargo build --release --target wasm32-unknown-unknown && \
     wasm-bindgen --target web --out-dir pkg \
       target/wasm32-unknown-unknown/release/copperline_web.wasm && \
     test -s pkg/copperline_web_bg.wasm
