@@ -20,10 +20,16 @@ on:
         required: false
         type: string
         default: ""
+    outputs:
+      digest:
+        description: "Digest of the pushed multi-arch manifest"
+        value: ${{ jobs.build.outputs.digest }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
     permissions:
       contents: read
       packages: write
@@ -48,6 +54,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
