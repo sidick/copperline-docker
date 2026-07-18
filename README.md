@@ -8,6 +8,15 @@ WebAssembly bundle in a Rust build stage and serves the resulting static site wi
 nginx. It boots the bundled open-source **AROS** ROM out of the box — no Kickstart
 needed — and configures a stock Amiga 500 (512K chip RAM + 512K trapdoor).
 
+> **Looking for the native build instead?** This image runs Copperline's
+> in-browser WebAssembly build. A sibling image,
+> [`ghcr.io/sidick/copperline-vnc`](https://github.com/sidick/amiga-emulation-docker),
+> runs the full native Copperline application inside a container, streamed to
+> your browser over KasmVNC, with persistent configuration and disk/ROM storage
+> in a server-side volume. It is published (alongside an amiberry image) from
+> the [amiga-emulation-docker](https://github.com/sidick/amiga-emulation-docker)
+> repo and auto-tracks upstream Copperline releases.
+
 ## Quick start
 
 Pull the pre-built multi-arch image (linux/amd64 + linux/arm64) from GHCR:
