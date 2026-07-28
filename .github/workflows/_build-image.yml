@@ -4,6 +4,13 @@ name: _build-image
 # publish-image.yml (manual) and upstream-release.yml (daily release watcher)
 # so the build definition lives in exactly one place. The caller computes the
 # tags and labels (with docker/metadata-action) and passes them in.
+#
+# Nothing is pushed until a smoke test has passed against the amd64 build: a
+# container is started and every shipped file must be served with the right
+# MIME type, then headless Chrome must see the page reach its Boot-ready
+# state (.github/smoke-test.sh). A green compile alone has shipped a dead
+# page before (v0.13.0's try.js imported a file the site assembly step never
+# copied); this gate is what catches that class.
 on:
   workflow_call:
     inputs:
@@ -52,6 +59,29 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Build the amd64 image into the local daemon first and smoke test it.
+      # The layers land in the shared GHA cache, so the multi-arch push below
+      # rebuilds nothing but the (trivial) arm64 runtime stage.
+      - name: Build for smoke test (amd64)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          build-args: |
+            COPPERLINE_REF=${{ inputs.copperline_ref }}
+          tags: copperline-smoke:candidate
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+
+      - name: Smoke test
+        run: |
+          npm install --no-save puppeteer-core
+          docker run -d --rm --name smoke -p 8080:8080 copperline-smoke:candidate
+          bash .github/smoke-test.sh http://localhost:8080 smoke
+          docker stop smoke
 
       - name: Build and push
         id: build
