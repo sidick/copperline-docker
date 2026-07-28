@@ -1,7 +1,9 @@
 # A browsable shelf of your disk library: everything in ./disks appears in
 # the page's "DF0 from list..." dropdown (and any .rom files in the
-# Kickstart list). Drop an index.json next to the disks to curate the list
-# with display names - see the main README's "Configuring the page".
+# Kickstart list). To curate the list - friendly names, files in
+# subdirectories - copy index.json.example to ./disks/index.json and edit;
+# it replaces the scraped listing (with one caveat: a manifest feeds both
+# dropdowns unfiltered - see the main README's "Curating the disk list").
 services:
   copperline:
     image: ghcr.io/sidick/copperline
