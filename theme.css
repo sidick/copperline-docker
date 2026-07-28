@@ -1,0 +1,21 @@
+/* Theme override hook - this stock file is empty on purpose.
+ *
+ * Mount your own over it to reskin the page without touching the HTML:
+ *
+ *   docker run -v ./theme.css:/usr/share/nginx/html/theme.css:ro ...
+ *
+ * It loads after the page's built-in styles, so anything here wins. The
+ * quickest reskin is the palette variables the whole page uses:
+ *
+ *   :root {
+ *     --bg: #0a0d16;        page background
+ *     --panel: #121725;     buttons, inputs, selects
+ *     --line: #2a3450;      borders
+ *     --ink: #e6ebf5;       text
+ *     --ink-mute: #8a97b5;  secondary text, labels
+ *     --accent: #d98a2b;    highlights, primary button, links
+ *   }
+ *
+ * Any other CSS works too; the element ids are stable (see the README's
+ * "Bring your own page" section for the shell contract).
+ */

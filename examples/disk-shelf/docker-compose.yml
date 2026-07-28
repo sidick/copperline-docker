@@ -1,0 +1,15 @@
+# A browsable shelf of your disk library: everything in ./disks appears in
+# the page's "DF0 from list..." dropdown (and any .rom files in the
+# Kickstart list). Drop an index.json next to the disks to curate the list
+# with display names - see the main README's "Configuring the page".
+services:
+  copperline:
+    image: ghcr.io/sidick/copperline
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./disks:/usr/share/nginx/html/files:ro
+    environment:
+      COPPERLINE_TITLE: "The Disk Shelf"
+      COPPERLINE_SUBTITLE: "Pick a disk from the list and boot"
+    restart: unless-stopped

@@ -1,0 +1,24 @@
+# Keep a deployment - and everything in its /files volume - off the open
+# internet. The emulator runs client-side, so any file the page can load,
+# a visitor's browser can download: access control has to gate who reaches
+# the site at all (see the main README).
+#
+# Two independent measures; use either or both:
+#
+#   1. Bind the port to localhost (or a LAN interface) so only local/
+#      tunnelled traffic reaches it - the ports: line below.
+#   2. HTTP basic auth on the whole site - the default.conf mounted below.
+#      Create the password file first:
+#        docker run --rm httpd:2-alpine htpasswd -Bbn me secret > .htpasswd
+services:
+  copperline:
+    image: ghcr.io/sidick/copperline
+    ports:
+      # localhost only; use "8080:8080" to expose, e.g. behind a reverse
+      # proxy that terminates TLS and enforces its own auth.
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./disks:/usr/share/nginx/html/files:ro
+      - ./default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./.htpasswd:/etc/nginx/.htpasswd:ro
+    restart: unless-stopped

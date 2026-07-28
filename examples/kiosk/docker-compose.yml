@@ -1,0 +1,22 @@
+# A page dedicated to one program: the disk is preloaded, the machine
+# powers on by itself, and visitors land in the running software with a
+# joystick ready. Put your disk image at ./disks/demo.adf (or change
+# COPPERLINE_DF0 to match your file).
+services:
+  copperline:
+    image: ghcr.io/sidick/copperline
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./disks:/usr/share/nginx/html/files:ro
+    environment:
+      COPPERLINE_DF0: files/demo.adf
+      COPPERLINE_AUTOBOOT: "true"
+      # "touch" gives on-screen controls on tablets and falls back to the
+      # keyboard joystick on desktops.
+      COPPERLINE_JOY: touch
+      # Fast loading; use "turbo" for instant, or drop for authentic speed.
+      COPPERLINE_FDSPEED: "800"
+      COPPERLINE_TITLE: "Demo of the week"
+      COPPERLINE_SUBTITLE: "Loads by itself - give it a moment"
+    restart: unless-stopped

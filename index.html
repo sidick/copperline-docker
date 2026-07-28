@@ -11,6 +11,9 @@
   /* Minimal, self-contained shell. All emulator behaviour lives in try.js,
      which looks up the element IDs below; this page only lays them out.
      No external CSS, fonts, images, or scripts. */
+  /* The palette, used by everything below. Override these (or any other
+     rule) in theme.css, which loads after this block and therefore wins:
+     mount your own over /usr/share/nginx/html/theme.css. */
   :root {
     --bg: #0a0d16;
     --panel: #121725;
@@ -213,12 +216,16 @@
     #stat { margin-left: 0; width: 100%; }
   }
 </style>
+<link rel="stylesheet" href="theme.css">
 </head>
 <body>
 
+<!-- The id'd spans are rebranding markers: COPPERLINE_TITLE and
+     COPPERLINE_SUBTITLE rewrite their contents at container start
+     (docker-entrypoint.d/41-copperline-branding.sh). Keep each on one line. -->
 <h1>
-  Copperline
-  <small>A cycle-driven Amiga (A500 / A1200), in Rust, compiled to WebAssembly</small>
+  <span id="page-title">Copperline</span>
+  <small id="page-subtitle">A cycle-driven Amiga (A500 / A1200), in Rust, compiled to WebAssembly</small>
 </h1>
 
 <div class="wrap">

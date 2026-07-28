@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Amiga</title>
+<style>
+  /* The smallest working shell: the required element ids below are the
+     whole contract; try.js (served by the image) finds them and does the
+     rest. Optional controls it misses here (machine select, floppy speed,
+     pause, save states, LED strip) insert themselves below #shell with
+     their own styling - add the ids from the main README's "Bring your
+     own page" to host them yourself. */
+  body { margin: 0; padding: 1rem; background: #111; color: #eee;
+         font-family: sans-serif; display: flex; flex-direction: column;
+         align-items: center; gap: 1rem; }
+  #shell { position: relative; width: min(92vw, 720px); }
+  #screen { display: block; width: 100%; aspect-ratio: 4 / 3;
+            background: #000; image-rendering: pixelated; touch-action: none; }
+  #overlay { position: absolute; inset: 0; display: flex; flex-direction: column;
+             align-items: center; justify-content: center; gap: 1rem;
+             background: rgba(0, 0, 0, 0.7); }
+  .bar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+  /* try.js toggles `hidden` on optional elements; keep its meaning. */
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<div id="shell">
+  <canvas id="screen" width="716" height="570"></canvas>
+  <div id="overlay">
+    <button id="boot" disabled>Boot</button>
+    <p id="load-status">loading&hellip;</p>
+    <a id="bug-report-err" hidden
+       href="https://github.com/CopperlineHQ/Copperline/issues/new?template=bug_report.yml"
+       target="_blank" rel="noopener">Report this on GitHub</a>
+  </div>
+</div>
+
+<div class="bar">
+  <label>Disk <input id="df0" type="file" accept=".adf,.adz,.dms,.gz,.zip,.ipf,.scp"></label>
+  <label>Kickstart <input id="kick" type="file" accept=".rom,.bin"></label>
+  <button id="eject">Eject</button>
+  <button id="reset">Reset</button>
+  <button id="joy">Joystick: off</button>
+  <button id="fullscreen">Fullscreen</button>
+  <input id="vol" type="range" min="0" max="100" value="80" aria-label="Volume">
+  <span id="stat"></span>
+</div>
+
+<script type="module" src="./try.js"></script>
+</body>
+</html>

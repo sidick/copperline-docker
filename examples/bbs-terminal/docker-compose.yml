@@ -1,0 +1,24 @@
+# Boot straight into dialling a telnet BBS over the emulated serial port.
+#
+# Needs two things you supply:
+#   - a WebSocket-to-TCP gateway (websockify-style) in front of the BBS,
+#     e.g.:  websockify --ssl-only 8443 bbs.example.com:23
+#   - terminal software on a bootable disk at ./disks/terminal.adf
+#
+# The page defers the dial until the guest's terminal opens the serial
+# port (DTR), so the BBS never sees boot noise; when the terminal exits,
+# it hangs up and re-arms.
+services:
+  copperline:
+    image: ghcr.io/sidick/copperline
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./disks:/usr/share/nginx/html/files:ro
+    environment:
+      COPPERLINE_DF0: files/terminal.adf
+      COPPERLINE_AUTOBOOT: "true"
+      COPPERLINE_SERIAL_URL: wss://bbs-gateway.example:8443/
+      COPPERLINE_TITLE: "Dial the BBS"
+      COPPERLINE_SUBTITLE: "Boots a terminal and connects by itself"
+    restart: unless-stopped
