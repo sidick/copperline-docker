@@ -83,12 +83,40 @@ docker compose up
 ```
 
 Then load the disk any of these ways:
+- pick it from the page's **DF0 from list…** dropdown (mounted files appear
+  there automatically), or
 - open `http://localhost:8080/?df0=files/game.adf` (a bootable, shareable link), or
 - click **DF0 from URL** and enter `files/game.adf`, or
 - browse the listing at `http://localhost:8080/files/`.
 
 Supported formats (detected by content): ADF, ADZ, DMS, IPF, SCP — plain or
 gzip/zip-packed, up to 64 MiB. Disks are always write-protected in the browser.
+
+#### Curating the disk list with `index.json`
+
+By default the list dropdowns show every matching file in the folder, named
+by filename. To curate — choose which files appear, give them friendly
+names, or list files kept in subdirectories — drop an `index.json` next to
+the disks; when present it replaces the scraped listing:
+
+```json
+[
+  { "name": "Boulder Dash (1 disk)", "url": "boulderdash.adf" },
+  { "name": "Lemmings — disk 1 of 2", "url": "lemmings/disk1.adf" },
+  { "name": "Lemmings — disk 2 of 2", "url": "lemmings/disk2.adf" },
+  "workbench13.adf"
+]
+```
+
+Entries are either a filename (relative to `files/`) or a `{name, url}`
+object; either way the list is shown alphabetically. One caveat: a manifest
+is taken as-is — unlike a scraped listing it is *not* filtered by file
+extension, and both dropdowns read the same folder, so a manifest's entries
+appear in the disk **and** Kickstart lists alike. That makes `index.json`
+a good fit for disk libraries (skip it, or accept the odd entry, if you
+also serve ROMs); for separately curated disk and ROM lists, use a custom
+shell whose two selects point `data-src` at different folders, each with
+its own manifest.
 
 ### Your own Kickstart
 
@@ -273,6 +301,25 @@ under "Optional page-shell hooks". A working minimal shell lives in
 Note: `COPPERLINE_TITLE`/`COPPERLINE_SUBTITLE` only know the stock shell's
 markers, so with your own page they are ignored (your page *is* the
 branding); a read-only mount is detected and skipped cleanly.
+
+## Publishing and access control
+
+A note before putting a deployment on the open internet. The image itself
+contains only open-source software — Copperline (GPL) and the bundled AROS
+ROMs (AROS Public License); Kickstart ROMs and most Amiga software are
+copyrighted, and anything in `/files` is supplied by whoever runs the
+container. Because the emulator runs in the visitor's browser, **any file
+the page can load, a visitor can download** — there is no way to make a
+ROM usable by the emulator but not fetchable, and hiding the directory
+listing doesn't change that. So on a publicly reachable deployment, treat
+everything mounted into `/files` as published: either keep such
+deployments private, or don't mount files you can't distribute.
+
+Keeping it private means gating who can reach the site at all:
+[`examples/private/`](examples/private/) shows both approaches — binding
+the port to localhost/LAN (put a TLS-terminating reverse proxy with its
+own auth in front to go further), and HTTP basic auth on the whole site
+via a mounted nginx config.
 
 ## Audio and secure context
 
