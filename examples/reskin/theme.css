@@ -1,0 +1,11 @@
+/* A light look with blue accents. These variables drive the whole stock
+ * page; any further CSS works too (the element ids are stable - see the
+ * main README's "Bring your own page"). */
+:root {
+  --bg: #f2f4f8;        /* page background                   */
+  --panel: #ffffff;     /* buttons, inputs, selects          */
+  --line: #c3cadb;      /* borders                           */
+  --ink: #17202f;       /* text                              */
+  --ink-mute: #5b6880;  /* secondary text, labels            */
+  --accent: #2b6bd9;    /* highlights, primary button, links */
+}

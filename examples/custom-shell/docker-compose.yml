@@ -1,0 +1,14 @@
+# Replace the page entirely: your own index.html is mounted over the
+# shipped one, and the image's JS glue (try.js and friends) drives
+# whatever elements it finds there. The index.html here is the smallest
+# working shell - start from it and make it yours. Note that
+# COPPERLINE_TITLE/COPPERLINE_SUBTITLE only know the stock shell, so with
+# your own page the title is yours to write into the HTML.
+services:
+  copperline:
+    image: ghcr.io/sidick/copperline
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./index.html:/usr/share/nginx/html/index.html:ro
+    restart: unless-stopped

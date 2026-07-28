@@ -17,9 +17,15 @@ services:
       - ./disks:/usr/share/nginx/html/files:ro
       # Or hand-write the page defaults yourself (wins over environment):
       # - ./copperline.json:/usr/share/nginx/html/copperline.json:ro
+      # Reskin without touching HTML (loads last, so your rules win):
+      # - ./theme.css:/usr/share/nginx/html/theme.css:ro
+      # Or replace the page wholesale (see README "Bring your own page"):
+      # - ./index.html:/usr/share/nginx/html/index.html:ro
     # Page defaults, written to copperline.json at startup. All optional;
     # URL parameters (?df0=, ?machine=, ...) still override per visit.
     # environment:
+    #   COPPERLINE_TITLE: "Dave's Amiga Corner"   # page + tab title
+    #   COPPERLINE_SUBTITLE: "Insert disk 1 of 11"
     #   COPPERLINE_MACHINE: A1200            # A500 (default) or A1200
     #   COPPERLINE_DF0: files/demo.adf       # disk to load on start
     #   COPPERLINE_KICK: files/kick31.rom    # Kickstart (path on this site)

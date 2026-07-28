@@ -76,8 +76,10 @@ RUN mkdir -p /site/pkg /site/aros && \
       done; \
     done
 
-# Our hand-written page shell (the Copperline repo ships no index.html).
-COPY index.html /site/index.html
+# Our hand-written page shell (the Copperline repo ships no index.html) and
+# the theme override hook it links (stock file is an empty placeholder; users
+# bind-mount their own to reskin).
+COPY index.html theme.css /site/
 
 # ---------------------------------------------------------------------------
 # Stage 2: serve the assembled site with nginx as a non-root user
@@ -107,12 +109,14 @@ USER root
 COPY --from=build /site /usr/share/nginx/html
 COPY nginx-default.conf /etc/nginx/conf.d/default.conf
 
-# Startup hook (the nginx image runs /docker-entrypoint.d/*.sh at container
-# start): generates the page's optional copperline.json from COPPERLINE_*
-# environment variables. A bind-mounted copperline.json wins over the
-# environment; with neither, nothing is written and the page keeps its stock
-# defaults.
-COPY --chmod=755 docker-entrypoint.d/40-copperline-config.sh /docker-entrypoint.d/
+# Startup hooks (the nginx image runs /docker-entrypoint.d/*.sh at container
+# start): 40- generates the page's optional copperline.json from COPPERLINE_*
+# environment variables (a bind-mounted copperline.json wins; with neither,
+# nothing is written and the page keeps its stock defaults); 41- rewrites the
+# page title/subtitle from COPPERLINE_TITLE/COPPERLINE_SUBTITLE (a
+# bind-mounted shell is left alone).
+COPY --chmod=755 docker-entrypoint.d/40-copperline-config.sh \
+                 docker-entrypoint.d/41-copperline-branding.sh /docker-entrypoint.d/
 
 # Drop zone for user-provided disks (and ROMs). Served by nginx under /files/
 # so the emulator's same-origin "DF0 from URL" / ?df0= loader can fetch them.

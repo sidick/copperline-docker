@@ -7,3 +7,4 @@
 *.md
 docker-compose.yml
 disks/
+examples/

@@ -202,6 +202,78 @@ docker run -p 8080:8080 \
 3. A bind-mounted `copperline.json` beats `COPPERLINE_*` variables.
 4. With neither, the page runs its stock defaults (boot AROS on an A500).
 
+## Making it yours
+
+The page is meant to be rebranded and reskinned without forking the image.
+Ready-to-adapt compose recipes for common setups (kiosk, disk shelf, BBS
+terminal, reskin, custom shell, private hosting) live in
+[`examples/`](examples/). Three layers, smallest hammer first:
+
+### Title and subtitle
+
+```sh
+docker run -p 8080:8080 \
+  -e COPPERLINE_TITLE="Dave's Amiga Corner" \
+  -e COPPERLINE_SUBTITLE="Insert disk 1 of 11" \
+  ghcr.io/sidick/copperline
+```
+
+Plain single-line text (it is HTML-escaped for you); sets the page heading,
+the line under it, and the browser-tab title.
+
+### Theme
+
+The page's styling funnels through a handful of CSS custom properties, and
+`theme.css` — an empty file in the stock image — loads last, so anything in
+it wins. Mount your own to reskin:
+
+```sh
+docker run -p 8080:8080 \
+  -v ./theme.css:/usr/share/nginx/html/theme.css:ro \
+  ghcr.io/sidick/copperline
+```
+
+```css
+/* theme.css — e.g. a light look with blue accents */
+:root {
+  --bg: #f2f4f8;        /* page background                       */
+  --panel: #ffffff;     /* buttons, inputs, selects              */
+  --line: #c3cadb;      /* borders                               */
+  --ink: #17202f;       /* text                                  */
+  --ink-mute: #5b6880;  /* secondary text, labels                */
+  --accent: #2b6bd9;    /* highlights, primary button, links     */
+}
+```
+
+Any further CSS works too — the element ids below are stable.
+
+### Bring your own page
+
+For a completely different page, mount your own `index.html` over the
+shipped one; the JS glue (`try.js` and friends) is served by the image and
+drives whatever elements it finds. The contract:
+
+**Required** (try.js binds these unconditionally) — `#shell` (wrapper around
+the display; fullscreen target), `#screen` (the canvas), `#overlay` (boot
+overlay), `#boot` (boot button), `#load-status` (status line), `#stat`
+(performance line), `#df0` and `#kick` (file inputs), `#eject`, `#reset`,
+`#joy`, `#fullscreen`, `#vol` (range input).
+
+**Optional** — everything else degrades gracefully or self-builds below the
+canvas: `#df0url`/`#kickurl`, `#df0list`/`#kicklist` (self-filling lists;
+`data-src` names the folder), `#machine`, `#floppy-speed`, `#pause`,
+`#screenshot`, `#savestate`/`#loadstate`/`#quicksave`/`#quickload`,
+`#ledbar`, `#floppy-sounds`, `#mono-audio`,
+`#serial-url`/`#serial-connect`/`#serial-status`/`#serial-raw`,
+`#bug-report`/`#bug-report-err`. The authoritative list lives in
+[upstream's browser guide](https://github.com/CopperlineHQ/Copperline/blob/main/docs/guide/browser.md)
+under "Optional page-shell hooks". A working minimal shell lives in
+[`examples/custom-shell/`](examples/custom-shell/).
+
+Note: `COPPERLINE_TITLE`/`COPPERLINE_SUBTITLE` only know the stock shell's
+markers, so with your own page they are ignored (your page *is* the
+branding); a read-only mount is detected and skipped cleanly.
+
 ## Audio and secure context
 
 `AudioWorklet` requires a *secure context*: HTTPS **or** `localhost`. Over

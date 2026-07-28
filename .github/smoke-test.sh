@@ -48,6 +48,8 @@ for f in $files; do
               *) fail "/$f served as '$ct', not application/wasm";; esac ;;
     *.html) case "$ct" in text/html*) ;; \
               *) fail "/$f served as '$ct', not text/html";; esac ;;
+    *.css)  case "$ct" in text/css*) ;; \
+              *) fail "/$f served as '$ct', not text/css";; esac ;;
   esac
   echo "ok: /$f ($ct)"
 done

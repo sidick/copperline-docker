@@ -1,0 +1,15 @@
+# Rebrand and retheme the stock page without touching any HTML: the title
+# and subtitle come from the environment, the look from the mounted
+# theme.css (which loads after the page's built-in styles, so its rules
+# win).
+services:
+  copperline:
+    image: ghcr.io/sidick/copperline
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./theme.css:/usr/share/nginx/html/theme.css:ro
+    environment:
+      COPPERLINE_TITLE: "Daylight Amiga"
+      COPPERLINE_SUBTITLE: "Same machine, sunnier disposition"
+    restart: unless-stopped
