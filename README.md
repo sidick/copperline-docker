@@ -6,7 +6,8 @@ emulator in your browser, served from a single Docker container.
 Copperline is written in Rust and compiled to WebAssembly. This image builds the
 WebAssembly bundle in a Rust build stage and serves the resulting static site with
 nginx. It boots the bundled open-source **AROS** ROM out of the box — no Kickstart
-needed — and configures a stock Amiga 500 (512K chip RAM + 512K trapdoor).
+needed — and configures a stock Amiga 500 (512K chip RAM + 512K trapdoor) by
+default, switchable to an AGA Amiga 1200 from the page's machine selector.
 
 > **Looking for the native build instead?** This image runs Copperline's
 > in-browser WebAssembly build. A sibling image,
