@@ -1,5 +1,6 @@
-# Only the Dockerfile, index.html and nginx-default.conf are needed as build
-# context; keep everything else out so docs never bust the runtime layer.
+# Only the Dockerfile, index.html, nginx-default.conf and docker-entrypoint.d/
+# are needed as build context; keep everything else out so docs never bust the
+# runtime layer.
 .git
 .gitignore
 *.md

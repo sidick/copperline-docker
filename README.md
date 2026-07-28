@@ -148,6 +148,60 @@ matched main + extended ROM pair. A stock Amiga Kickstart is a single ROM with n
 extended half, so it does not fit this two-file boot path — use the **Load
 Kickstart…** picker above for those.
 
+## Configuring the page
+
+The page's defaults — which machine boots, what's in the drive, whether it
+powers on by itself — come from an optional `copperline.json` served next to
+the page (the schema is
+[upstream's](https://github.com/CopperlineHQ/Copperline/blob/main/docs/guide/browser.md)).
+The container gives you two ways to provide it:
+
+### Environment variables
+
+Set any of these and the container writes `copperline.json` at startup:
+
+| Variable                  | `copperline.json` key | Values                          |
+| ------------------------- | --------------------- | ------------------------------- |
+| `COPPERLINE_MACHINE`      | `machine`             | `A500` (default), `A1200`       |
+| `COPPERLINE_DF0`          | `df0`                 | disk URL, e.g. `files/demo.adf` |
+| `COPPERLINE_KICK`         | `kick`                | ROM path on this site, e.g. `files/kick31.rom` |
+| `COPPERLINE_JOY`          | `joy`                 | `off`, `keys`, `cd32`, `touch`  |
+| `COPPERLINE_FDSPEED`      | `floppy_speed`        | `100`, `200`, `400`, `800`, `turbo` |
+| `COPPERLINE_FLOPPY_SOUNDS`| `floppy_sounds`       | `true`, `false`                 |
+| `COPPERLINE_MONO_AUDIO`   | `mono_audio`          | `true`, `false`                 |
+| `COPPERLINE_SERIAL_URL`   | `serial_url`          | WebSocket gateway URL           |
+| `COPPERLINE_SERIAL_RAW`   | `serial_raw`          | `true`, `false`                 |
+| `COPPERLINE_AUTOBOOT`     | `autoboot`            | `true`, `false`                 |
+
+A demo kiosk that boots straight into a mounted disk:
+
+```sh
+docker run -p 8080:8080 \
+  -v ./disks:/usr/share/nginx/html/files:ro \
+  -e COPPERLINE_DF0=files/demo.adf \
+  -e COPPERLINE_AUTOBOOT=true \
+  ghcr.io/sidick/copperline
+```
+
+### Or mount the file
+
+For full control (or to keep the config in version control), hand-write
+`copperline.json` and mount it; it wins over the environment variables:
+
+```sh
+docker run -p 8080:8080 \
+  -v ./copperline.json:/usr/share/nginx/html/copperline.json:ro \
+  ghcr.io/sidick/copperline
+```
+
+### Precedence
+
+1. Visitor's own changes on the page always win.
+2. URL parameters (`?df0=`, `?kick=`, `?machine=`, `?joy=`, `?fdspeed=`)
+   override the config per visit — handy for sharing links.
+3. A bind-mounted `copperline.json` beats `COPPERLINE_*` variables.
+4. With neither, the page runs its stock defaults (boot AROS on an A500).
+
 ## Audio and secure context
 
 `AudioWorklet` requires a *secure context*: HTTPS **or** `localhost`. Over

@@ -107,6 +107,13 @@ USER root
 COPY --from=build /site /usr/share/nginx/html
 COPY nginx-default.conf /etc/nginx/conf.d/default.conf
 
+# Startup hook (the nginx image runs /docker-entrypoint.d/*.sh at container
+# start): generates the page's optional copperline.json from COPPERLINE_*
+# environment variables. A bind-mounted copperline.json wins over the
+# environment; with neither, nothing is written and the page keeps its stock
+# defaults.
+COPY --chmod=755 docker-entrypoint.d/40-copperline-config.sh /docker-entrypoint.d/
+
 # Drop zone for user-provided disks (and ROMs). Served by nginx under /files/
 # so the emulator's same-origin "DF0 from URL" / ?df0= loader can fetch them.
 # Owned by the nginx user so a bind-mounted host directory is readable.
