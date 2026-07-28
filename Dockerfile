@@ -17,11 +17,10 @@
 # ---------------------------------------------------------------------------
 FROM --platform=$BUILDPLATFORM rust:1-bookworm AS build
 
-# Copperline git ref to build: a commit SHA, tag, or branch. The browser
-# frontend (crates/copperline-web) landed on main after the v0.11.0 release, so
-# no release tag contains it yet; this is pinned to a specific main commit for
-# reproducibility. Override with --build-arg COPPERLINE_REF=<sha|tag|branch>.
-ARG COPPERLINE_REF=bc5bcbf166432d4e2b0d3b2a468f4443eefe5f6a
+# Copperline git ref to build: a commit SHA, tag, or branch. Release tags from
+# v0.12.0 onward contain the browser frontend (crates/copperline-web).
+# Override with --build-arg COPPERLINE_REF=<sha|tag|branch>.
+ARG COPPERLINE_REF=v0.13.0
 
 # 1. wasm target
 RUN rustup target add wasm32-unknown-unknown
@@ -29,7 +28,7 @@ RUN rustup target add wasm32-unknown-unknown
 # 2. Source at the pinned ref. Use fetch-by-ref (not clone --branch) so a raw
 #    commit SHA works too; GitHub allows fetching a reachable SHA directly.
 RUN git init /src && cd /src && \
-    git remote add origin https://github.com/LinuxJedi/Copperline.git && \
+    git remote add origin https://github.com/CopperlineHQ/Copperline.git && \
     git fetch --depth 1 origin "${COPPERLINE_REF}" && \
     git checkout FETCH_HEAD && \
     test -f crates/copperline-web/Cargo.toml
@@ -57,13 +56,25 @@ RUN cargo build --release --target wasm32-unknown-unknown && \
       target/wasm32-unknown-unknown/release/copperline_web.wasm && \
     test -s pkg/copperline_web_bg.wasm
 
-# 5. Assemble the static site into /site
+# 5. Assemble the static site into /site. All of www/ is JS glue that ships
+#    with the page (try.js, audio-worklet.js, serial-telnet.js as of v0.13.0),
+#    so copy the lot rather than naming files that can go stale. Then verify
+#    every relative `from './x.js'` import in the shipped JS resolves inside
+#    /site: a missing module rejects the whole ES module graph in the browser
+#    and the page dies at "loading emulator..." (this bit the v0.13.0 image,
+#    which shipped a try.js importing serial-telnet.js without the file).
 RUN mkdir -p /site/pkg /site/aros && \
     cp pkg/copperline_web.js pkg/copperline_web_bg.wasm /site/pkg/ && \
-    cp www/try.js www/audio-worklet.js /site/ && \
+    cp www/*.js /site/ && \
     cp /src/assets/aros/aros-amiga-m68k-rom.bin \
        /src/assets/aros/aros-amiga-m68k-ext.bin \
-       /src/assets/aros/LICENSE /src/assets/aros/ACKNOWLEDGEMENTS /site/aros/
+       /src/assets/aros/LICENSE /src/assets/aros/ACKNOWLEDGEMENTS /site/aros/ && \
+    for f in /site/*.js /site/pkg/*.js; do \
+      for dep in $(grep -oE "from '\./[^']+'" "$f" | cut -d"'" -f2); do \
+        test -f "$(dirname "$f")/$dep" || \
+          { echo "ERROR: $f imports $dep, which is not in the site"; exit 1; }; \
+      done; \
+    done
 
 # Our hand-written page shell (the Copperline repo ships no index.html).
 COPY index.html /site/index.html
@@ -78,14 +89,14 @@ COPY index.html /site/index.html
 FROM nginxinc/nginx-unprivileged:alpine
 
 # Re-declared so the build ARG is visible in this stage for the labels below.
-ARG COPPERLINE_REF=bc5bcbf166432d4e2b0d3b2a468f4443eefe5f6a
+ARG COPPERLINE_REF=v0.13.0
 
 # OCI image metadata.
 LABEL org.opencontainers.image.title="copperline-docker" \
       org.opencontainers.image.description="Copperline cycle-driven Amiga emulator, compiled to WebAssembly and served by nginx" \
       org.opencontainers.image.url="https://copperline.dev/" \
-      org.opencontainers.image.source="https://github.com/LinuxJedi/Copperline" \
-      org.opencontainers.image.documentation="https://github.com/LinuxJedi/Copperline/blob/main/docs/guide/browser.md" \
+      org.opencontainers.image.source="https://github.com/CopperlineHQ/Copperline" \
+      org.opencontainers.image.documentation="https://github.com/CopperlineHQ/Copperline/blob/main/docs/guide/browser.md" \
       org.opencontainers.image.licenses="GPL-3.0-or-later" \
       org.opencontainers.image.revision="${COPPERLINE_REF}"
 
