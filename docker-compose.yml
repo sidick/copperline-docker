@@ -12,7 +12,22 @@ services:
       # host:container — nginx listens on 8080 inside (runs as non-root)
       - "8080:8080"
     volumes:
-      # Drop your .adf/.rom files in ./disks, then load them in the emulator
-      # via ?df0=files/<name>.adf or the "DF0 from URL" button.
+      # Drop your .adf/.rom files in ./disks; they appear in the page's two
+      # list dropdowns automatically and can be loaded via ?df0=files/<name>.
       - ./disks:/usr/share/nginx/html/files:ro
+      # Or hand-write the page defaults yourself (wins over environment):
+      # - ./copperline.json:/usr/share/nginx/html/copperline.json:ro
+    # Page defaults, written to copperline.json at startup. All optional;
+    # URL parameters (?df0=, ?machine=, ...) still override per visit.
+    # environment:
+    #   COPPERLINE_MACHINE: A1200            # A500 (default) or A1200
+    #   COPPERLINE_DF0: files/demo.adf       # disk to load on start
+    #   COPPERLINE_KICK: files/kick31.rom    # Kickstart (path on this site)
+    #   COPPERLINE_JOY: keys                 # off | keys | cd32 | touch
+    #   COPPERLINE_FDSPEED: "800"            # 100 | 200 | 400 | 800 | turbo
+    #   COPPERLINE_FLOPPY_SOUNDS: "false"    # drive sounds on/off
+    #   COPPERLINE_MONO_AUDIO: "true"        # mix output to mono
+    #   COPPERLINE_SERIAL_URL: wss://bbs-gateway.example/   # serial bridge
+    #   COPPERLINE_SERIAL_RAW: "false"       # bypass the telnet layer
+    #   COPPERLINE_AUTOBOOT: "true"          # power on once loaded
     restart: unless-stopped
