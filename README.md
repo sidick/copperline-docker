@@ -1,12 +1,13 @@
 # copperline-docker
 
-Run the [Copperline](https://github.com/LinuxJedi/Copperline) cycle-driven Amiga
+Run the [Copperline](https://github.com/CopperlineHQ/Copperline) cycle-driven Amiga
 emulator in your browser, served from a single Docker container.
 
 Copperline is written in Rust and compiled to WebAssembly. This image builds the
 WebAssembly bundle in a Rust build stage and serves the resulting static site with
 nginx. It boots the bundled open-source **AROS** ROM out of the box — no Kickstart
-needed — and configures a stock Amiga 500 (512K chip RAM + 512K trapdoor).
+needed — and configures a stock Amiga 500 (512K chip RAM + 512K trapdoor) by
+default, switchable to an AGA Amiga 1200 from the page's machine selector.
 
 > **Looking for the native build instead?** This image runs Copperline's
 > in-browser WebAssembly build. A sibling image,
@@ -160,16 +161,16 @@ works.
 
 ## Building a different Copperline version
 
-The Copperline git ref is a build argument. Because the browser frontend
-(`crates/copperline-web`) was added to `main` *after* the v0.11.0 release, no
-release tag contains it yet, so the default is pinned to a specific `main` commit
-for reproducibility. Override it with a commit SHA, tag, or branch:
+The Copperline git ref is a build argument, defaulting to the latest release tag
+this repo has been updated for. Release tags from v0.12.0 onward contain the
+browser frontend (`crates/copperline-web`). Override it with a commit SHA, tag,
+or branch:
 
 ```sh
 # Latest main
 docker build --build-arg COPPERLINE_REF=main -t copperline .
 
-# A specific commit or (once one exists) a release tag with the browser build
+# A specific commit or release tag (v0.12.0 or later)
 docker build --build-arg COPPERLINE_REF=<sha-or-tag> -t copperline .
 ```
 
@@ -203,6 +204,7 @@ The published package starts **private** — make it public under the repo's
 ├── index.html            # minimal page shell (this repo)
 ├── try.js                # emulator page glue (from Copperline)
 ├── audio-worklet.js      # audio output worklet (from Copperline)
+├── serial-telnet.js      # telnet layer for the serial/BBS bridge (from Copperline)
 ├── pkg/                  # wasm-bindgen bundle (copperline_web.js + .wasm)
 ├── aros/                 # bundled open-source AROS ROMs + licence
 └── files/                # VOLUME — your mounted disks/ROMs

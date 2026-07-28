@@ -9,7 +9,7 @@ on:
       copperline_ref:
         description: "Copperline git ref to build (commit SHA, tag, or branch)"
         required: false
-        default: bc5bcbf166432d4e2b0d3b2a468f4443eefe5f6a
+        default: v0.13.0
       tag:
         description: "Image tag to publish (alongside a git-sha tag)"
         required: false
